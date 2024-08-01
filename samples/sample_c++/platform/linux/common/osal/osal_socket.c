@@ -51,10 +51,10 @@ T_DjiReturnCode Osal_Socket(E_DjiSocketMode mode, T_DjiSocketHandle *socketHandl
     int opt = 1;
 
     /*! set the socket default read buffer to 20MByte */
-    system("echo 20000000 > /proc/sys/net/core/rmem_default");
+    system("sudo sh -c 'echo 20000000 > /proc/sys/net/core/rmem_default'");
 
     /*! set the socket max read buffer to 50MByte */
-    system("echo 50000000 > /proc/sys/net/core/rmem_max");
+    system("sudo sh -c 'echo 50000000 > /proc/sys/net/core/rmem_max'");
 
     if (socketHandle == NULL) {
         return DJI_ERROR_SYSTEM_MODULE_CODE_INVALID_PARAMETER;

@@ -278,7 +278,7 @@ void Application::DjiUser_ApplicationStart()
 
     if (aircraftInfoBaseInfo.mountPosition != DJI_MOUNT_POSITION_EXTENSION_PORT
         && DJI_MOUNT_POSITION_EXTENSION_LITE_PORT != aircraftInfoBaseInfo.mountPosition) {
-        throw std::runtime_error("Please run this sample on extension port.");
+        //throw std::runtime_error("Please run this sample on extension port.");
     }
 
     returnCode = DjiCore_SetAlias("PSDK_APPALIAS");
