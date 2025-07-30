@@ -51,6 +51,27 @@
         const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
+/******************** Little Endian Handling ********************************/
+
+/*
+* cpu_to_le16/32 are used when initializing structures, a context where a
+* function call is not allowed. To solve this, we code cpu_to_le16/32 in a way
+* that allows them to be used when initializing structures.
+*/
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define cpu_to_le16(x) (x)
+#define cpu_to_le32(x) (x)
+#else
+#define cpu_to_le16(x) ((((x) >> 8) & 0xffu) | (((x) & 0xffu) << 8))
+#define cpu_to_le32(x) \
+((((x) & 0xff000000u) >> 24) | (((x) & 0x00ff0000u) >> 8) | \
+(((x) & 0x0000ff00u) << 8) | (((x) & 0x000000ffu) << 24))
+#endif
+
+#define le32_to_cpu(x) le32toh(x)
+#define le16_to_cpu(x) le16toh(x)
+
 /******************** Descriptors and Strings *******************************/
 
 static const struct {
@@ -64,12 +85,12 @@ static const struct {
 	} __attribute__ ((__packed__)) fs_descs, hs_descs;
 } __attribute__ ((__packed__)) descriptors = {
 	.header = {
-		.magic = htole32(FUNCTIONFS_DESCRIPTORS_MAGIC_V2),
-		.flags = htole32(FUNCTIONFS_HAS_FS_DESC |
+		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC_V2),
+		.flags = cpu_to_le32(FUNCTIONFS_HAS_FS_DESC |
 				     FUNCTIONFS_HAS_HS_DESC),
-		.length = htole32(sizeof(descriptors)),
+		.length = cpu_to_le32(sizeof(descriptors)),
 	},
-	.fs_count = htole32(3),
+	.fs_count = cpu_to_le32(3),
 	.fs_descs = {
 		.intf = {
 			.bLength = sizeof(descriptors.fs_descs.intf),
@@ -91,7 +112,7 @@ static const struct {
 			.bmAttributes = USB_ENDPOINT_XFER_BULK,
 		},
 	},
-	.hs_count = htole32(3),
+	.hs_count = cpu_to_le32(3),
 	.hs_descs = {
 		.intf = {
 			.bLength = sizeof(descriptors.hs_descs.intf),
@@ -105,14 +126,14 @@ static const struct {
 			.bDescriptorType = USB_DT_ENDPOINT,
 			.bEndpointAddress = 1 | USB_DIR_IN,
 			.bmAttributes = USB_ENDPOINT_XFER_BULK,
-			.wMaxPacketSize = htole16(512),
+			.wMaxPacketSize = cpu_to_le16(512),
 		},
 		.bulk_out = {
 			.bLength = sizeof(descriptors.hs_descs.bulk_out),
 			.bDescriptorType = USB_DT_ENDPOINT,
 			.bEndpointAddress = 2 | USB_DIR_OUT,
 			.bmAttributes = USB_ENDPOINT_XFER_BULK,
-			.wMaxPacketSize = htole16(512),
+			.wMaxPacketSize = cpu_to_le16(512),
 		},
 	},
 };
@@ -133,13 +154,13 @@ static const struct {
 	} __attribute__ ((__packed__)) lang0;
 } __attribute__ ((__packed__)) strings = {
 	.header = {
-		.magic = htole32(FUNCTIONFS_STRINGS_MAGIC),
-		.length = htole32(sizeof(strings)),
-		.str_count = htole32(1),
-		.lang_count = htole32(1),
+		.magic = cpu_to_le32(FUNCTIONFS_STRINGS_MAGIC),
+		.length = cpu_to_le32(sizeof(strings)),
+		.str_count = cpu_to_le32(1),
+		.lang_count = cpu_to_le32(1),
 	},
 	.lang0 = {
-		htole16(0x0409), /* en-us */
+		cpu_to_le16(0x0409), /* en-us */
 		STR_INTERFACE,
 	},
 };
@@ -477,7 +498,7 @@ int send_message(struct transfer *out_transfer)
 	int ret;
 
 	len = strlen(out_transfer->message.line_buf) + 1;
-	out_transfer->message.length = htole16(len + 2);
+	out_transfer->message.length = cpu_to_le16(len + 2);
 	out_transfer->in_progress = 1;
 
 	ret = submit_ffs_request(out_transfer->ctx,
@@ -898,7 +919,7 @@ int main(int argc, char **argv)
 	}
 
 	while(1){
-		sleep(1);	
+		sleep(1);
 	}
 
 close_desc:

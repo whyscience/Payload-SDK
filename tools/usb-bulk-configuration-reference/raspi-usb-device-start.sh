@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 # The IP address shared by all USB network interfaces created by this script.
 net_ip=192.168.42.120
@@ -13,13 +14,17 @@ startup_bulk_dir=$(dirname "$0")
 startup_bulk_exe=${startup_bulk_dir}/build/startup_bulk
 
 if [ ! -d /sys/kernel/config/usb_gadget ]; then
-    if ! $(grep -q dtoverlay=dwc2 /boot/config.txt) ; then
-        echo -e "\n\n\n## customized\n# for op-sdk enable USB device RNDIS\n[all]\ndtoverlay=dwc2" >> /boot/config.txt
+    # this is mistake
+    # [cm4]
+    # dtoverlay=dwc2,dr_mode=host
+
+    if ! $(grep -q dtoverlay=dwc2 /boot/firmware/config.txt) ; then
+        echo -e "\n\n\n## customized\n# for op-sdk enable USB device RNDIS\n[all]\ndtoverlay=dwc2" >> /boot/firmware/config.txt
         init 6
     fi
 
-    if ! $(grep -q modules-load=dwc2 /boot/cmdline.txt) ; then
-        sed -i 's/rootwait /&modules-load=dwc2 /' /boot/cmdline.txt
+    if ! $(grep -q modules-load=dwc2 /boot/firmware/cmdline.txt) ; then
+        sed -i 's/rootwait /&modules-load=dwc2 /' /boot/firmware/cmdline.txt
         init 6
     fi
 
@@ -124,7 +129,7 @@ if [ ! -d /sys/kernel/config/usb_gadget/pi4 ]; then
         fi
 
         mkdir -p "${cfg}/strings/0x409"
-        echo "${cfg_str:1}" > "${cfg}/strings/0x409/configuration"
+        echo "${cfg_str#?}" > "${cfg}/strings/0x409/configuration"
     # cd -
 
 fi
@@ -150,11 +155,13 @@ fi
     ls /sys/class/udc > UDC
 
 if [ ${enable_rndis} -eq 1 ]; then
-    /sbin/brctl addbr pi4br0
-    /sbin/ifconfig pi4br0 ${net_ip} netmask ${net_mask} up
+    # Modern iproute2 commands instead of deprecated bridge-utils
+    ip link add name pi4br0 type bridge
+    ip addr add ${net_ip}/${net_mask} dev pi4br0
+    ip link set pi4br0 up
 
-    /sbin/brctl addif pi4br0 usb0
-    /sbin/ifconfig usb0 down
-    /sbin/ifconfig usb0 up
+    ip link set usb0 master pi4br0
+    ip link set usb0 down
+    ip link set usb0 up
 fi
 exit 0

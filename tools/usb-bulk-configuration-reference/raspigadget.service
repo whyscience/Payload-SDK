@@ -1,0 +1,11 @@
+[Unit]
+Description=Configure USB flashing port for device mode
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+ExecStart=/opt/rasp-usb-config/raspi-usb-device-start.sh
+ExecStop=/opt/rasp-usb-config/raspi-usb-device-stop.sh
+
+[Install]
+WantedBy=multi-user.target
